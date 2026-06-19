@@ -2,6 +2,7 @@ package main
 
 import "engine/core"
 import "engine/ecs"
+import "engine/render"
 import "game"
 
 main :: proc() {
@@ -14,6 +15,9 @@ main :: proc() {
 		core.log_error("main: ECS init failed")
 		return
 	}
+
+	render.init()
+	defer render.shutdown()
 
 	core.start()
 

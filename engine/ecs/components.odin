@@ -14,25 +14,6 @@ import "../rmath"
 // This keeps each field contiguous in memory for cache friendly
 // iteration when systems only need a subset of fields
 
-// Transform
-//
-// World space position, rotation (unit quaternion being the canonical
-// rotation representation), and scale. Engine systems operate on the
-// quaternion directly. Euler helpers exist in the rmath package for
-// Lua/editor/debug use only as we don't store Euler as the source of truth
-
-Transform :: struct {
-	position: rmath.Vec3,
-	rotation: rmath.Quat,
-	scale:    rmath.Vec3,
-}
-
-DEFAULT_TRANSFORM :: Transform {
-	position = {0, 0, 0},
-	rotation = rmath.QUAT_IDENTITY,
-	scale    = {1, 1, 1},
-}
-
 // Mesh_Renderer
 //
 // References a mesh and material by asset handle (u32 IDs)
@@ -51,7 +32,7 @@ Mesh_Renderer :: struct {
 
 Component_Arrays :: struct {
 	// Transform
-	transform:         []Transform,
+	transform:         []rmath.Transform,
 	has_transform:     []bool,
 
 	// Mesh_Renderer
@@ -65,7 +46,12 @@ g_components: Component_Arrays
 component_arrays_init :: proc() -> bool {
 	arena := core.mem_permanent()
 
-	g_components.transform = core.arena_push_slice(arena, Transform, MAX_ENTITIES, "transform")
+	g_components.transform = core.arena_push_slice(
+		arena,
+		rmath.Transform,
+		MAX_ENTITIES,
+		"transform",
+	)
 	g_components.has_transform = core.arena_push_slice(arena, bool, MAX_ENTITIES, "has_transform")
 	g_components.mesh_renderer = core.arena_push_slice(
 		arena,
@@ -94,7 +80,7 @@ component_arrays_init :: proc() -> bool {
 
 // Transform accessors
 
-transform_add :: proc(e: Entity, t: Transform = DEFAULT_TRANSFORM) -> bool {
+transform_add :: proc(e: Entity, t: rmath.Transform = rmath.TRANSFORM_IDENTITY) -> bool {
 	if !entity_alive(e) do return false
 	idx := entity_index(e)
 	g_components.transform[idx] = t
@@ -114,7 +100,7 @@ transform_has :: proc(e: Entity) -> bool {
 }
 
 // Returns nil if the entity isn't alive or has no transform
-transform_get :: proc(e: Entity) -> ^Transform {
+transform_get :: proc(e: Entity) -> ^rmath.Transform {
 	if !entity_alive(e) do return nil
 	idx := entity_index(e)
 	if !g_components.has_transform[idx] do return nil
@@ -156,7 +142,7 @@ mesh_renderer_get :: proc(e: Entity) -> ^Mesh_Renderer {
 //
 // Systems call these to get raw slices for cache friendly batch processing
 
-transforms_raw :: proc() -> (data: []Transform, has: []bool) {
+transforms_raw :: proc() -> (data: []rmath.Transform, has: []bool) {
 	return g_components.transform, g_components.has_transform
 }
 
