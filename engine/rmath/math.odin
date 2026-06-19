@@ -404,7 +404,7 @@ quat_slerp :: proc(a, b: Quat, t: f32) -> Quat {
 		cos_theta = -cos_theta
 	}
 
-	// If very close, fall back to nlerp to avoid divide by near zero
+	// If rlly close, fall back to nlerp to avoid divide by near zero
 	if cos_theta > 1.0 - EPSILON {
 		return quat_normalize(quat_add(a, quat_scale(quat_sub(bb, a), t)))
 	}
@@ -417,7 +417,8 @@ quat_slerp :: proc(a, b: Quat, t: f32) -> Quat {
 	return quat_add(quat_scale(a, w0), quat_scale(bb, w1))
 }
 
-// Linear interpolation + normalize. Which is cheaper than slerp and good for small deltas
+// Linear interpolation + normalize
+// it's actually cheaper than slerp and good for small deltas
 quat_nlerp :: proc(a, b: Quat, t: f32) -> Quat {
 	return quat_normalize(quat_add(a, quat_scale(quat_sub(b, a), t)))
 }
