@@ -1,7 +1,7 @@
 package ecs
 
 import "../core"
-import "core:math/linalg"
+import "../rmath"
 
 // Component Arrays
 //
@@ -16,20 +16,20 @@ import "core:math/linalg"
 
 // Transform
 //
-// Local space position, rotation (Euler angles in degrees), scale
-// We'll eventually add prev_position/prev_rotation/prev_scale as
-// parallel fields (or a parallel array for that matter) here when
-// double-buffering will be introduced
+// World space position, rotation (unit quaternion being the canonical
+// rotation representation), and scale. Engine systems operate on the
+// quaternion directly. Euler helpers exist in the rmath package for
+// Lua/editor/debug use only as we don't store Euler as the source of truth
 
 Transform :: struct {
-	position: linalg.Vector3f32,
-	rotation: linalg.Vector3f32,
-	scale:    linalg.Vector3f32,
+	position: rmath.Vec3,
+	rotation: rmath.Quat,
+	scale:    rmath.Vec3,
 }
 
 DEFAULT_TRANSFORM :: Transform {
 	position = {0, 0, 0},
-	rotation = {0, 0, 0},
+	rotation = rmath.QUAT_IDENTITY,
 	scale    = {1, 1, 1},
 }
 
