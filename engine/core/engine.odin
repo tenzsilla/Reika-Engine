@@ -9,6 +9,7 @@ Engine_Config :: struct {
 	window_height: i32,
 	target_fps:    i32,
 	log_level:     Log_Level,
+	memory:        Memory_Config,
 }
 
 DEFAULT_CONFIG :: Engine_Config {
@@ -17,6 +18,7 @@ DEFAULT_CONFIG :: Engine_Config {
 	window_height = 720,
 	target_fps    = 0,
 	log_level     = .Info,
+	memory        = DEFAULT_MEMORY_CONFIG,
 }
 
 @(private)
@@ -51,6 +53,11 @@ init :: proc(config: Engine_Config = DEFAULT_CONFIG) {
 		FIXED_UPDATE_HZ,
 	)
 
+	if !memory_init(config.memory) {
+		log_error("Engine init failed: memory allocation error")
+		return
+	}
+
 	rl.InitWindow(config.window_width, config.window_height, config.window_title)
 
 	if config.target_fps > 0 {
@@ -61,11 +68,13 @@ init :: proc(config: Engine_Config = DEFAULT_CONFIG) {
 
 	g_running = true
 
+	log_info("Engine ready")
+}
+
+start :: proc() {
 	if g_hooks.on_init != nil {
 		g_hooks.on_init()
 	}
-
-	log_info("Engine ready")
 }
 
 shutdown :: proc() {
@@ -76,6 +85,7 @@ shutdown :: proc() {
 	}
 
 	rl.CloseWindow()
+	memory_shutdown()
 	log_info("Engine shutdown complete")
 }
 
@@ -84,11 +94,14 @@ is_running :: proc() -> bool {
 }
 
 // frame executes one full engine tick
-// 1. compute timing and determine fixed step count
-// 2. run N fixed updates (game simulation)
-// 3. run one variable render pass
+// 1. reset frame arena
+// 2. poll os events
+// 3. run N fixed updates (game simulation)
+// 4. variable render pass
 frame :: proc() {
+	memory_frame_reset()
 	rl.PollInputEvents()
+
 	steps := time_begin_frame()
 
 	for i in 0 ..< steps {
