@@ -1,7 +1,6 @@
 package ecs
 
 import "../core"
-import "core:sys/darwin/CoreFoundation"
 
 // Entity ID
 //

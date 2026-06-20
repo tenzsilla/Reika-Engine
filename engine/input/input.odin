@@ -22,6 +22,9 @@ Key :: enum i32 {
 	Down   = 264,
 	Left   = 263,
 	Right  = 262,
+	// Function keys (for engine/debug toggles)
+	F1     = 290,
+	F2     = 293,
 }
 
 Mouse_Button :: enum i32 {
@@ -37,12 +40,14 @@ Key_Snapshot :: struct {
 	space, shift, ctrl:                                               bool,
 	escape:                                                           bool,
 	up, down, left, right:                                            bool,
+	f1, f2:                                                           bool,
 
 	// "just pressed" variants
 	w_pressed, a_pressed, s_pressed, d_pressed, e_pressed, q_pressed: bool,
 	space_pressed, shift_pressed, ctrl_pressed:                       bool,
 	escape_pressed:                                                   bool,
 	up_pressed, down_pressed, left_pressed, right_pressed:            bool,
+	f1_pressed, f2_pressed:                                           bool,
 }
 
 Mouse_Snapshot :: struct {
@@ -94,6 +99,8 @@ _build_key_snapshot :: proc(k: ^Key_Snapshot) {
 	k.down = rl.IsKeyDown(.DOWN)
 	k.left = rl.IsKeyDown(.LEFT)
 	k.right = rl.IsKeyDown(.RIGHT)
+	k.f1 = rl.IsKeyDown(.F1)
+	k.f2 = rl.IsKeyDown(.F2)
 
 	k.w_pressed = rl.IsKeyPressed(.W)
 	k.a_pressed = rl.IsKeyPressed(.A)
@@ -109,6 +116,8 @@ _build_key_snapshot :: proc(k: ^Key_Snapshot) {
 	k.down_pressed = rl.IsKeyPressed(.DOWN)
 	k.left_pressed = rl.IsKeyPressed(.LEFT)
 	k.right_pressed = rl.IsKeyPressed(.RIGHT)
+	k.f1_pressed = rl.IsKeyPressed(.F1)
+	k.f2_pressed = rl.IsKeyPressed(.F2)
 }
 
 @(private)

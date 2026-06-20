@@ -1,6 +1,7 @@
 package core
 
 import input "../input"
+import profiler "../profiler"
 import rl "vendor:raylib"
 
 Engine_Config :: struct {
@@ -16,7 +17,7 @@ DEFAULT_CONFIG :: Engine_Config {
 	window_title  = "Reika",
 	window_width  = 1280,
 	window_height = 720,
-	target_fps    = 180,
+	target_fps    = 60,
 	log_level     = .Info,
 	memory        = DEFAULT_MEMORY_CONFIG,
 }
@@ -116,6 +117,8 @@ frame :: proc() {
 	if g_hooks.on_render != nil {
 		g_hooks.on_render(time_real_delta())
 	}
+
+	profiler.end_frame(time_real_delta(), steps)
 }
 
 request_quit :: proc() {

@@ -22,6 +22,7 @@ Mesh_Renderer :: struct {
 	mesh_id:     u32,
 	material_id: u32,
 	visible:     bool,
+	tint:        rmath.Vec3,
 }
 
 // Component Arrays
@@ -109,13 +110,19 @@ transform_get :: proc(e: Entity) -> ^rmath.Transform {
 
 // Mesh_Renderer accessors
 
-mesh_renderer_add :: proc(e: Entity, mesh_id: u32, material_id: u32) -> bool {
+mesh_renderer_add :: proc(
+	e: Entity,
+	mesh_id: u32,
+	material_id: u32,
+	tint: rmath.Vec3 = rmath.Vec3{1, 1, 1},
+) -> bool {
 	if !entity_alive(e) do return false
 	idx := entity_index(e)
 	g_components.mesh_renderer[idx] = Mesh_Renderer {
 		mesh_id     = mesh_id,
 		material_id = material_id,
 		visible     = true,
+		tint        = tint,
 	}
 	g_components.has_mesh_renderer[idx] = true
 	return true

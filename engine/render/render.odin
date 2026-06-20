@@ -28,6 +28,7 @@ import rlgl "vendor:raylib/rlgl"
 Render_Command :: struct {
 	mesh_id:   u32,
 	transform: rmath.Mat4,
+	tint:      rmath.Vec3,
 }
 
 // Renderer private state
@@ -201,6 +202,28 @@ set_background_color :: proc(r, g, b: u8) {
 	g_bg_color = rl.Color{r, g, b, 255}
 }
 
+// Color helpers
+
+Color :: rl.Color
+
+make_color :: proc(r, g, b, a: u8) -> Color {
+	return Color{r, g, b, a}
+}
+
+COLOR_WHITE :: Color{255, 255, 255, 255}
+COLOR_BLACK :: Color{0, 0, 0, 255}
+COLOR_BLACK_SHADOW :: Color{0, 0, 0, 180}
+
+// 2D text overlay (used by the game layer to draw the profiler / debug HUD)
+
+draw_text :: proc(text: cstring, x: i32, y: i32, size: i32, color: Color) {
+	rl.DrawText(text, x, y, size, color)
+}
+
+draw_text_default :: proc(text: cstring, x: i32, y: i32) {
+	rl.DrawText(text, x, y, 20, COLOR_WHITE)
+}
+
 // Frame
 //
 // begin_frame/end_frame bracket the entire frame's drawing (raylib
@@ -266,7 +289,7 @@ _draw_command_lit :: proc(cmd: Render_Command) {
 		// scaled meshes with correct lighting
 		world_normal := rmath.vec3_normalize(rmath.mat4_transform_dir(cmd.transform, model_normal))
 
-		r, g, b, a := vertex_light_color(world_normal, g_light)
+		r, g, b, a := vertex_light_color(world_normal, g_light, cmd.tint)
 		rlgl.Color4ub(r, g, b, a)
 		rlgl.Vertex3f(world_pos.x, world_pos.y, world_pos.z)
 	}

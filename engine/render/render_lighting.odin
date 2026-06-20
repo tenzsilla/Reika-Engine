@@ -37,7 +37,13 @@ DEFAULT_DIRECTIONAL_LIGHT :: Directional_Light {
 
 // Per vertex lighting (on the CPU)
 
-vertex_light_color :: proc(normal: rmath.Vec3, light: Directional_Light) -> (r, g, b, a: u8) {
+vertex_light_color :: proc(
+	normal: rmath.Vec3,
+	light: Directional_Light,
+	tint: rmath.Vec3 = rmath.Vec3{1, 1, 1},
+) -> (
+	r, g, b, a: u8,
+) {
 	neg_l := rmath.Vec3 {
 		x = -light.direction.x,
 		y = -light.direction.y,
@@ -47,10 +53,11 @@ vertex_light_color :: proc(normal: rmath.Vec3, light: Directional_Light) -> (r, 
 	ndotl := rmath.vec3_dot(normal, neg_l)
 	if ndotl < 0 do ndotl = 0
 
+	// apply tint as a linear multiplier on the lit result
 	lit := rmath.Vec3 {
-		x = light.ambient.x + light.color.x * light.intensity * ndotl,
-		y = light.ambient.y + light.color.y * light.intensity * ndotl,
-		z = light.ambient.z + light.color.z * light.intensity * ndotl,
+		x = (light.ambient.x + light.color.x * light.intensity * ndotl) * tint.x,
+		y = (light.ambient.y + light.color.y * light.intensity * ndotl) * tint.y,
+		z = (light.ambient.z + light.color.z * light.intensity * ndotl) * tint.z,
 	}
 
 	r = u8(rmath.clamp(lit.x, 0.0, 1.0) * 255.0 + 0.5)
