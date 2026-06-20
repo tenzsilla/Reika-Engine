@@ -16,7 +16,7 @@ DEFAULT_CONFIG :: Engine_Config {
 	window_title  = "Reika",
 	window_width  = 1280,
 	window_height = 720,
-	target_fps    = 0,
+	target_fps    = 180,
 	log_level     = .Info,
 	memory        = DEFAULT_MEMORY_CONFIG,
 }
@@ -96,16 +96,17 @@ is_running :: proc() -> bool {
 // frame executes one full engine tick
 // 1. reset frame arena
 // 2. poll os events
-// 3. run N fixed updates (game simulation)
-// 4. variable render pass
+// 3. snapshot input once per frame
+// 4. run N fixed updates (game simulation)
+// 5. variable render pass
 frame :: proc() {
 	memory_frame_reset()
 	rl.PollInputEvents()
+	input.snapshot()
 
 	steps := time_begin_frame()
 
 	for i in 0 ..< steps {
-		input.snapshot()
 		if g_hooks.on_fixed_update != nil {
 			g_hooks.on_fixed_update(time_fixed_delta())
 		}

@@ -1,5 +1,6 @@
 package render
 
+import cam "../camera"
 import "../core"
 import "../rmath"
 import rl "vendor:raylib"
@@ -10,12 +11,12 @@ import rlgl "vendor:raylib/rlgl"
 // Modern raylib/OpenGL backend intentionally reproducing the PS2-era
 // visual language with: vertex dominant CPU lighting, single directional
 // light, flat render command pipeline. The renderer consumes pre-built
-// render commands and never queries ECS or any gameplay state directly
+// render commands and never queries ECS, gameplay or any input state directly
 //
-// The renderer owns the camera state, directional light state, built-in
-// unit cube geometry. Though the renderer does NOT own the command slice
-// (the caller owns it, while the renderer reads only), ECS state, and
-// gameplay state.
+// Renderer owns the directional light state, the built in unit cube geometry,
+// and a borrowed pointer to a game owned Camera. Renderer however does not own
+// the camera storage, the command slice (the caller owns and renderer reads only),
+// ECS state, gameplay state, input state.
 //
 // Raylib types never leave this package. Reika math types are the public
 // API; conversion to rl.* happens internally with transmuting (layout
@@ -29,32 +30,10 @@ Render_Command :: struct {
 	transform: rmath.Mat4,
 }
 
-Camera_Projection :: enum {
-	Perspective,
-	Orthographic,
-}
-
-// Camera uses Reika math only and is converted to rl.Camera3D internally
-Camera :: struct {
-	position:   rmath.Vec3,
-	target:     rmath.Vec3,
-	up:         rmath.Vec3,
-	fovy:       f32, // vertical FOV in degrees (perspective only)
-	projection: Camera_Projection,
-}
-
-DEFAULT_CAMERA :: Camera {
-	position   = {5, 5, 5},
-	target     = {0, 0, 0},
-	up         = {0, 1, 0},
-	fovy       = 60.0,
-	projection = .Perspective,
-}
-
 // Renderer private state
 
 @(private)
-g_camera: Camera = DEFAULT_CAMERA
+g_camera: ^cam.Camera = nil
 
 @(private)
 g_light: Directional_Light
@@ -185,7 +164,7 @@ g_cube_indices: [CUBE_INDEX_COUNT]u32 = {
 // Lifecycle
 
 init :: proc() {
-	g_camera = DEFAULT_CAMERA
+	g_camera = nil
 	g_light = DEFAULT_DIRECTIONAL_LIGHT
 	g_light.direction = rmath.vec3_normalize(g_light.direction)
 
@@ -206,7 +185,7 @@ shutdown :: proc() {
 
 // Setters
 
-set_camera :: proc(cam: Camera) {
+set_camera_ptr :: proc(cam: ^cam.Camera) {
 	g_camera = cam
 }
 
@@ -247,8 +226,14 @@ end_frame :: proc() {
 // (color, position) pair to rlgl
 
 submit :: proc(commands: []Render_Command) {
-	rl_cam := _to_rl_camera(g_camera)
+	if g_camera == nil {
+		core.log_error(
+			"render.submit() called with no camera set; call set_camera_ptr() during init",
+		)
+		return
+	}
 
+	rl_cam := _to_rl_camera(g_camera^)
 	rl.BeginMode3D(rl_cam)
 	defer rl.EndMode3D()
 
@@ -293,7 +278,7 @@ _draw_command_lit :: proc(cmd: Render_Command) {
 // {x, y, z: f32} with no padding
 
 @(private)
-_to_rl_camera :: proc(cam: Camera) -> rl.Camera3D {
+_to_rl_camera :: proc(cam: cam.Camera) -> rl.Camera3D {
 	rl_proj: rl.CameraProjection
 	switch cam.projection {
 	case .Perspective:

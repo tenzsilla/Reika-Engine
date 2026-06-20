@@ -10,6 +10,8 @@ Key :: enum i32 {
 	A      = 65,
 	S      = 83,
 	D      = 68,
+	E      = 69,
+	Q      = 81,
 	// Actions
 	Space  = 32,
 	Shift  = 340, // lshift
@@ -31,16 +33,16 @@ Mouse_Button :: enum i32 {
 // Snapshot types
 
 Key_Snapshot :: struct {
-	w, a, s, d:                                            bool,
-	space, shift, ctrl:                                    bool,
-	escape:                                                bool,
-	up, down, left, right:                                 bool,
+	w, a, s, d, e, q:                                                 bool,
+	space, shift, ctrl:                                               bool,
+	escape:                                                           bool,
+	up, down, left, right:                                            bool,
 
 	// "just pressed" variants
-	w_pressed, a_pressed, s_pressed, d_pressed:            bool,
-	space_pressed, shift_pressed, ctrl_pressed:            bool,
-	escape_pressed:                                        bool,
-	up_pressed, down_pressed, left_pressed, right_pressed: bool,
+	w_pressed, a_pressed, s_pressed, d_pressed, e_pressed, q_pressed: bool,
+	space_pressed, shift_pressed, ctrl_pressed:                       bool,
+	escape_pressed:                                                   bool,
+	up_pressed, down_pressed, left_pressed, right_pressed:            bool,
 }
 
 Mouse_Snapshot :: struct {
@@ -82,6 +84,8 @@ _build_key_snapshot :: proc(k: ^Key_Snapshot) {
 	k.a = rl.IsKeyDown(.A)
 	k.s = rl.IsKeyDown(.S)
 	k.d = rl.IsKeyDown(.D)
+	k.e = rl.IsKeyDown(.E)
+	k.q = rl.IsKeyDown(.Q)
 	k.space = rl.IsKeyDown(.SPACE)
 	k.shift = rl.IsKeyDown(.LEFT_SHIFT)
 	k.ctrl = rl.IsKeyDown(.LEFT_CONTROL)
@@ -95,6 +99,8 @@ _build_key_snapshot :: proc(k: ^Key_Snapshot) {
 	k.a_pressed = rl.IsKeyPressed(.A)
 	k.s_pressed = rl.IsKeyPressed(.S)
 	k.d_pressed = rl.IsKeyPressed(.D)
+	k.e_pressed = rl.IsKeyPressed(.E)
+	k.q_pressed = rl.IsKeyPressed(.Q)
 	k.space_pressed = rl.IsKeyPressed(.SPACE)
 	k.shift_pressed = rl.IsKeyPressed(.LEFT_SHIFT)
 	k.ctrl_pressed = rl.IsKeyPressed(.LEFT_CONTROL)

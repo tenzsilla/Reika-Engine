@@ -1,5 +1,6 @@
 package game
 
+import cam "../engine/camera"
 import "../engine/core"
 import "../engine/ecs"
 import "../engine/input"
@@ -9,6 +10,13 @@ import "../engine/rmath"
 // Game_State holds all runtime gameplay data
 Game_State :: struct {
 	initialized: bool,
+
+	// Camera is game owned authoritative state
+	camera:      cam.Camera,
+
+	// free fly debug camera controller
+	cam_ctrl:    cam.Camera_Controller,
+
 	// test entity
 	test_entity: ecs.Entity,
 	test_angle:  f32,
@@ -37,7 +45,13 @@ on_init :: proc() {
 	g_state = {}
 	g_state.initialized = true
 
-	render.set_camera(render.DEFAULT_CAMERA)
+	// renderer borrows a pointer to it
+	g_state.camera = cam.DEFAULT_CAMERA
+	render.set_camera_ptr(&g_state.camera)
+
+	// wire the controller to the camera
+	g_state.cam_ctrl = cam.camera_controller_init(&g_state.camera)
+
 	render.set_directional_light(render.DEFAULT_DIRECTIONAL_LIGHT)
 
 	e := ecs.entity_create()
@@ -82,6 +96,9 @@ on_fixed_update :: proc(dt: f32) {
 
 @(private)
 on_render :: proc(dt: f32) {
+	// update the debug cam from input
+	cam.camera_controller_update(&g_state.cam_ctrl, dt)
+
 	render.begin_frame()
 	defer render.end_frame()
 
