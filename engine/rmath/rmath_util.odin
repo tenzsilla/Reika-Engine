@@ -144,7 +144,7 @@ transform_get_euler :: proc(t: Transform) -> (pitch_deg, yaw_deg, roll_deg: f32)
 }
 
 // Composes a TRS world matrix from a Transform
-transform_to_mat4 :: proc(t: Transform) -> Mat4 {
+transform_to_mat4 :: #force_inline proc(t: Transform) -> Mat4 {
 	return mat4_trs(t.position, t.rotation, t.scale)
 }
 

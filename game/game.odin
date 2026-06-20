@@ -190,24 +190,27 @@ on_render :: proc(dt: f32) {
 }
 
 // Builds render commands from ECS component arrays
+// Only iterates live entity slots with ecs.live_indices() -> O(live_count)
 @(private)
 _build_render_commands :: proc(cmds: []render.Render_Command) -> int {
 	transforms, has_t := ecs.transforms_raw()
 	mesh_renderers, has_mr := ecs.mesh_renderers_raw()
+	live := ecs.live_indices()
 
 	count := 0
 	cap := len(cmds)
 
-	for i in 0 ..< ecs.MAX_ENTITIES {
+	for i in 0 ..< len(live) {
 		if count >= cap do break
-		if !has_mr[i] do continue
-		if !has_t[i] do continue
-		if !mesh_renderers[i].visible do continue
+		idx := int(live[i])
+		if !has_mr[idx] do continue
+		if !has_t[idx] do continue
+		if !mesh_renderers[idx].visible do continue
 
 		cmds[count] = render.Render_Command {
-			mesh_id   = mesh_renderers[i].mesh_id,
-			transform = rmath.transform_to_mat4(transforms[i]),
-			tint      = mesh_renderers[i].tint,
+			mesh_id   = mesh_renderers[idx].mesh_id,
+			transform = rmath.transform_to_mat4(transforms[idx]),
+			tint      = mesh_renderers[idx].tint,
 		}
 		count += 1
 	}

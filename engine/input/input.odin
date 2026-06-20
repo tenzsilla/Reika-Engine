@@ -14,17 +14,17 @@ Key :: enum i32 {
 	Q      = 81,
 	// Actions
 	Space  = 32,
-	Shift  = 340, // lshift
-	Ctrl   = 341, // lctrl
-	Escape = 256,
+	Shift  = 16, // lshift
+	Ctrl   = 17, // lctrl
+	Escape = 27,
 	// Arrow keys
-	Up     = 265,
-	Down   = 264,
-	Left   = 263,
-	Right  = 262,
+	Up     = 38,
+	Down   = 40,
+	Left   = 37,
+	Right  = 39,
 	// Function keys (for engine/debug toggles)
-	F1     = 290,
-	F2     = 293,
+	F1     = 112,
+	F2     = 113,
 }
 
 Mouse_Button :: enum i32 {

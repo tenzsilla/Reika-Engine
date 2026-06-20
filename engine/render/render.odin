@@ -271,28 +271,43 @@ submit :: proc(commands: []Render_Command) {
 
 @(private)
 _draw_command_lit :: proc(cmd: Render_Command) {
-	// mesh_id is ignored for now and only the built in cube exists
-	// Asset pipeline will resolve mesh_id to a geometry source
+	// GPU transform + model space CPU lighting
+	//
+	// The world space light direction is transformed into model space
+	// ONCE per cube (which is cheap because it's one transpose + one
+	// transform_dir + one normalize). Then per vertex lighting is
+	// computed in model space using the precomputed model normals
+	transform_t := rmath.mat4_transpose(cmd.transform)
+	model_light_dir := rmath.vec3_normalize(
+		rmath.mat4_transform_dir(transform_t, g_light.direction),
+	)
+
+	model_light := Directional_Light {
+		direction = model_light_dir,
+		color     = g_light.color,
+		intensity = g_light.intensity,
+		ambient   = g_light.ambient,
+	}
+
+	lit_colors: [CUBE_VERTEX_COUNT][4]u8
+	for v in 0 ..< CUBE_VERTEX_COUNT {
+		r, g, b, a := vertex_light_color(g_cube_normals[v], model_light, cmd.tint)
+		lit_colors[v] = {r, g, b, a}
+	}
+
+	rlgl.PushMatrix()
+	mat := cmd.transform.m
+	rlgl.MultMatrixf(cast([^]f32)&mat[0])
 
 	for i in 0 ..< CUBE_INDEX_COUNT {
 		idx := g_cube_indices[i]
-		model_pos := g_cube_positions[idx]
-		model_normal := g_cube_normals[idx]
-
-		world_pos := rmath.mat4_transform_point(cmd.transform, model_pos)
-
-		// mat4_transform_dir applies the rotation+scale portion
-		// (drops translation). For uniform scale this is fine but
-		// for non uniform scale, normals would need the inverse
-		// transpose. It's acceptable for the current scope we have
-		// but we'll revisit when art direction requires non uniform
-		// scaled meshes with correct lighting
-		world_normal := rmath.vec3_normalize(rmath.mat4_transform_dir(cmd.transform, model_normal))
-
-		r, g, b, a := vertex_light_color(world_normal, g_light, cmd.tint)
-		rlgl.Color4ub(r, g, b, a)
-		rlgl.Vertex3f(world_pos.x, world_pos.y, world_pos.z)
+		c := lit_colors[idx]
+		rlgl.Color4ub(c[0], c[1], c[2], c[3])
+		p := g_cube_positions[idx]
+		rlgl.Vertex3f(p.x, p.y, p.z) // model space
 	}
+
+	rlgl.PopMatrix()
 }
 
 // Raylib conversion (private)

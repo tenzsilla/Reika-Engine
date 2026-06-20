@@ -43,14 +43,15 @@ MAX_ENTITIES :: 65536
 
 Entity_Pool :: struct {
 	// Generation counter per slot
-	generations: []u16,
+	generations:  []u16,
 	// lifo free list of recycled indices
-	free_list:   []u32,
-	free_head:   int, // Stack top
+	free_list:    []u32,
+	free_head:    int, // Stack top
 	// Grows until MAX_ENTITIES
-	next_index:  u32,
+	next_index:   u32,
 	// Current entity count
-	count:       int,
+	count:        int,
+	live_indices: []u32,
 }
 
 @(private)
@@ -61,8 +62,9 @@ entity_pool_init :: proc() -> bool {
 
 	g_pool.generations = core.arena_push_slice(arena, u16, MAX_ENTITIES, "entity_generations")
 	g_pool.free_list = core.arena_push_slice(arena, u32, MAX_ENTITIES, "entity_free_list")
+	g_pool.live_indices = core.arena_push_slice(arena, u32, MAX_ENTITIES, "entity_live_indices")
 
-	if g_pool.generations == nil || g_pool.free_list == nil {
+	if g_pool.generations == nil || g_pool.free_list == nil || g_pool.live_indices == nil {
 		core.log_error("ECS: entity pool allocation failed")
 		return false
 	}
@@ -92,6 +94,7 @@ entity_create :: proc() -> Entity {
 	}
 
 	gen := u32(g_pool.generations[idx])
+	g_pool.live_indices[g_pool.count] = idx
 	g_pool.count += 1
 	return entity_make(idx, gen)
 }
@@ -109,6 +112,14 @@ entity_destroy :: proc(e: Entity) {
 	// Bump generation to invalidate all existing handles to this slot
 	g_pool.generations[idx] = (g_pool.generations[idx] + 1) % (1 << ENTITY_GEN_BITS)
 
+	// swap remove from live_indices (O(count) per destroy)
+	for i in 0 ..< g_pool.count {
+		if g_pool.live_indices[i] == idx {
+			g_pool.live_indices[i] = g_pool.live_indices[g_pool.count - 1]
+			break
+		}
+	}
+
 	g_pool.free_head += 1
 	g_pool.free_list[g_pool.free_head] = idx
 	g_pool.count -= 1
@@ -122,3 +133,8 @@ entity_alive :: proc(e: Entity) -> bool {
 }
 
 entity_count :: proc() -> int {return g_pool.count}
+
+// returns the compact slice of live entity slot indices
+live_indices :: proc() -> []u32 {
+	return g_pool.live_indices[:g_pool.count]
+}

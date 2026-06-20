@@ -87,15 +87,15 @@ vec3 :: proc(x, y, z: f32) -> Vec3 {
 	return Vec3{x, y, z}
 }
 
-vec3_add :: proc(a, b: Vec3) -> Vec3 {
+vec3_add :: #force_inline proc(a, b: Vec3) -> Vec3 {
 	return Vec3{a.x + b.x, a.y + b.y, a.z + b.z}
 }
 
-vec3_sub :: proc(a, b: Vec3) -> Vec3 {
+vec3_sub :: #force_inline proc(a, b: Vec3) -> Vec3 {
 	return Vec3{a.x - b.x, a.y - b.y, a.z - b.z}
 }
 
-vec3_scale :: proc(v: Vec3, s: f32) -> Vec3 {
+vec3_scale :: #force_inline proc(v: Vec3, s: f32) -> Vec3 {
 	return Vec3{v.x * s, v.y * s, v.z * s}
 }
 
@@ -104,15 +104,15 @@ vec3_mul :: proc(a, b: Vec3) -> Vec3 {
 	return Vec3{a.x * b.x, a.y * b.y, a.z * b.z}
 }
 
-vec3_dot :: proc(a, b: Vec3) -> f32 {
+vec3_dot :: #force_inline proc(a, b: Vec3) -> f32 {
 	return a.x * b.x + a.y * b.y + a.z * b.z
 }
 
-vec3_cross :: proc(a, b: Vec3) -> Vec3 {
+vec3_cross :: #force_inline proc(a, b: Vec3) -> Vec3 {
 	return Vec3{a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x}
 }
 
-vec3_length_sq :: proc(v: Vec3) -> f32 {
+vec3_length_sq :: #force_inline proc(v: Vec3) -> f32 {
 	return v.x * v.x + v.y * v.y + v.z * v.z
 }
 
@@ -120,7 +120,7 @@ vec3_length :: proc(v: Vec3) -> f32 {
 	return f32(math.sqrt(f64(vec3_length_sq(v))))
 }
 
-vec3_normalize :: proc(v: Vec3) -> Vec3 {
+vec3_normalize :: #force_inline proc(v: Vec3) -> Vec3 {
 	l := vec3_length(v)
 	if l < EPSILON do return VEC3_ZERO
 	inv := 1.0 / l
@@ -221,7 +221,7 @@ mat4_mul :: proc(a, b: Mat4) -> Mat4 {
 }
 
 // Transforms a point (w=1) by m and returns the resulting Vec4
-mat4_transform_point :: proc(m: Mat4, p: Vec3) -> Vec3 {
+mat4_transform_point :: #force_inline proc(m: Mat4, p: Vec3) -> Vec3 {
 	return Vec3 {
 		m.m[0] * p.x + m.m[4] * p.y + m.m[8] * p.z + m.m[12],
 		m.m[1] * p.x + m.m[5] * p.y + m.m[9] * p.z + m.m[13],
@@ -230,7 +230,7 @@ mat4_transform_point :: proc(m: Mat4, p: Vec3) -> Vec3 {
 }
 
 // Transforms a direction (w=0, so translation is dropped)
-mat4_transform_dir :: proc(m: Mat4, d: Vec3) -> Vec3 {
+mat4_transform_dir :: #force_inline proc(m: Mat4, d: Vec3) -> Vec3 {
 	return Vec3 {
 		m.m[0] * d.x + m.m[4] * d.y + m.m[8] * d.z,
 		m.m[1] * d.x + m.m[5] * d.y + m.m[9] * d.z,
@@ -238,7 +238,7 @@ mat4_transform_dir :: proc(m: Mat4, d: Vec3) -> Vec3 {
 	}
 }
 
-mat4_transpose :: proc(m: Mat4) -> Mat4 {
+mat4_transpose :: #force_inline proc(m: Mat4) -> Mat4 {
 	r: Mat4
 	for c in 0 ..< 4 {
 		for row in 0 ..< 4 {
@@ -294,7 +294,7 @@ mat4_from_quat :: proc(q: Quat) -> Mat4 {
 
 // Composes TRS (translation * rotation * scale) in the standard game engine
 // order: scale first (object space), then rotate, then translate (world space)
-mat4_trs :: proc(translation: Vec3, rotation: Quat, scale: Vec3) -> Mat4 {
+mat4_trs :: #force_inline proc(translation: Vec3, rotation: Quat, scale: Vec3) -> Mat4 {
 	t := mat4_translation(translation)
 	r := mat4_from_quat(rotation)
 	s := mat4_scale(scale)

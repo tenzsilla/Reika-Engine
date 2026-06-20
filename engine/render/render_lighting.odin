@@ -37,7 +37,7 @@ DEFAULT_DIRECTIONAL_LIGHT :: Directional_Light {
 
 // Per vertex lighting (on the CPU)
 
-vertex_light_color :: proc(
+vertex_light_color :: #force_inline proc(
 	normal: rmath.Vec3,
 	light: Directional_Light,
 	tint: rmath.Vec3 = rmath.Vec3{1, 1, 1},

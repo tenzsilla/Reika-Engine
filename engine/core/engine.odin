@@ -17,7 +17,7 @@ DEFAULT_CONFIG :: Engine_Config {
 	window_title  = "Reika",
 	window_width  = 1280,
 	window_height = 720,
-	target_fps    = 60,
+	target_fps    = 180,
 	log_level     = .Info,
 	memory        = DEFAULT_MEMORY_CONFIG,
 }
