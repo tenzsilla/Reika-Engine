@@ -18,10 +18,13 @@ The following is the list of layers to be implemented in-order:
 - [x] ECS (Entity Component System)
 - [x] Basic Renderer
 - [x] Camera System
-- [x] Profiler (bound to F1) <- we're here
-- [ ] Material Service
+- [x] Profiler (bound to F1)
+- [x] Material Service <- we're here
+- [ ] Mesh Service
+- [ ] Texture Service
 - [ ] Asset Pipeline
 - [ ] PS1 Style Renderer
+- [ ] Lighting/art Pipeline
 - [ ] Scene/world Management
 - [ ] Lua Scripting
 - [ ] Polish Systems (Animation, Physics...)
