@@ -2,6 +2,8 @@
 
 Reika is a high-performance, open-source  3D game engine which embraces the nostalgic and beautiful style and aesthetic of the Playstation 1. It is developed using the Odin programming language along with the Raylib graphics library.
 
+![Showcase](images/reika_showcase_1.png)
+
 ## ⚠️ Disclaimer
 
 This game engine is extremely premature. I personally have only tested it on my system (a Ubuntu-based distro), so OS specific issues may arise on your end.
@@ -81,4 +83,3 @@ The project is structured as follows:
 * `engine/render/` is the engine's renderer, which handles the PS1 visuals and performance critical code.
 * `engine/camera/` is the engine's camera system and controller
 * `engine/profiler/` is the engine's profiler overlay package
-
