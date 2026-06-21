@@ -4,6 +4,7 @@ import cam "../engine/camera"
 import "../engine/core"
 import "../engine/ecs"
 import "../engine/input"
+import "../engine/material"
 import "../engine/profiler"
 import "../engine/render"
 import "../engine/rmath"
@@ -19,6 +20,9 @@ CUBE_COUNT :: 1000
 GRID_SIDE :: 32
 GRID_SPACING :: f32(2.0)
 
+// Every Nth cube uses the toon material
+TOON_EVERY_NTH :: 7
+
 // Game_State holds all runtime gameplay data
 Game_State :: struct {
 	initialized:      bool,
@@ -32,7 +36,11 @@ Game_State :: struct {
 	cube_entities:    [CUBE_COUNT]ecs.Entity,
 	cube_spin_speeds: [CUBE_COUNT]f32,
 	cube_angles:      [CUBE_COUNT]f32,
+	// profiler overlay toggleable with F1
 	show_profiler:    bool,
+	// ps1 low res framebuffer toggle with F2
+	ps1_lowres:       bool,
+	toon_material:    material.Material_Handle,
 }
 
 @(private)
@@ -46,6 +54,7 @@ register :: proc() {
 	core.set_hooks(
 		{
 			on_init = on_init,
+			on_update = on_update,
 			on_fixed_update = on_fixed_update,
 			on_render = on_render,
 			on_shutdown = on_shutdown,
@@ -58,6 +67,21 @@ on_init :: proc() {
 	g_state = {}
 	g_state.initialized = true
 	g_state.show_profiler = true
+	g_state.ps1_lowres = true
+
+	material.init()
+
+	g_state.toon_material = material.material_create(
+		material.Material_Props {
+			lighting = .Toon,
+			tint = {1, 1, 1},
+			fog_response = .Affected,
+			filter = .Nearest,
+		},
+	)
+	if g_state.toon_material == material.MATERIAL_INVALID {
+		core.log_error("Game: failed to create toon material; falling back to default")
+	}
 
 	// renderer borrows a pointer to it
 	g_state.camera = cam.DEFAULT_CAMERA
@@ -69,6 +93,20 @@ on_init :: proc() {
 	g_state.cam_ctrl = cam.camera_controller_init(&g_state.camera)
 
 	render.set_directional_light(render.DEFAULT_DIRECTIONAL_LIGHT)
+
+	// Linear fog tuned to the scene
+	render.set_fog(
+		render.Fog_Settings {
+			enabled = true,
+			color   = {0.45, 0.5, 0.6}, // cool grayish blue
+			near    = 25.0,
+			far     = 50.0,
+		},
+	)
+
+	// ps1 low-res framebuffer
+	// 320x240 is NTSC Ps1-ish
+	render.set_ps1_lowres(g_state.ps1_lowres, 640, 360)
 
 	_spawn_cubes()
 
@@ -103,7 +141,13 @@ _spawn_cubes :: proc() {
 			e,
 			rmath.Transform{position = pos, rotation = rmath.QUAT_IDENTITY, scale = {1, 1, 1}},
 		)
-		ecs.mesh_renderer_add(e, 0, 0, tint)
+
+		// toon for every Nth cube, default otherwise
+		mat_id: u32 = 0
+		if g_state.toon_material != material.MATERIAL_INVALID && i % TOON_EVERY_NTH == 0 {
+			mat_id = u32(g_state.toon_material)
+		}
+		ecs.mesh_renderer_add(e, 0, mat_id, tint)
 
 		g_state.cube_entities[i] = e
 		g_state.cube_spin_speeds[i] = spin
@@ -131,20 +175,28 @@ _hash_spin_speed :: proc(i: int) -> f32 {
 }
 
 @(private)
-on_fixed_update :: proc(dt: f32) {
+on_update :: proc(dt: f32) {
 	snap := input.get()
 
-	// Quit on escape
 	if snap.keys.escape_pressed {
 		core.request_quit()
 		return
 	}
 
-	// F1 toggles profiler overlay
 	if snap.keys.f1_pressed {
 		g_state.show_profiler = !g_state.show_profiler
 	}
 
+	if snap.keys.f2_pressed {
+		g_state.ps1_lowres = !g_state.ps1_lowres
+		render.set_ps1_lowres(g_state.ps1_lowres, 320, 240)
+	}
+
+	cam.camera_controller_update(&g_state.cam_ctrl, dt)
+}
+
+@(private)
+on_fixed_update :: proc(dt: f32) {
 	// Spin every cube around its local y axis
 	for i in 0 ..< CUBE_COUNT {
 		e := g_state.cube_entities[i]
@@ -163,9 +215,6 @@ on_fixed_update :: proc(dt: f32) {
 
 @(private)
 on_render :: proc(dt: f32) {
-	// update the debug cam from input
-	cam.camera_controller_update(&g_state.cam_ctrl, dt)
-
 	render.begin_frame()
 	defer render.end_frame()
 
@@ -207,10 +256,32 @@ _build_render_commands :: proc(cmds: []render.Render_Command) -> int {
 		if !has_t[idx] do continue
 		if !mesh_renderers[idx].visible do continue
 
+		mr := mesh_renderers[idx]
+
+		// resolve material
+		mat := material.material_get(material.Material_Handle(mr.material_id))
+		if mat == nil {
+			mat = material.material_get(material.Material_Handle(0))
+		}
+		if mat == nil {
+			// should never happen
+			continue
+		}
+
+		// combine per-instance tint
+		combined_tint := rmath.vec3_mul(mr.tint, mat.tint)
+
 		cmds[count] = render.Render_Command {
-			mesh_id   = mesh_renderers[idx].mesh_id,
-			transform = rmath.transform_to_mat4(transforms[idx]),
-			tint      = mesh_renderers[idx].tint,
+			mesh_id      = mr.mesh_id,
+			transform    = rmath.transform_to_mat4(transforms[idx]),
+			tint         = combined_tint,
+			texture      = mat.texture,
+			filter       = mat.filter,
+			lighting     = mat.lighting,
+			fog_response = mat.fog_response,
+			vertex_snap  = mat.vertex_snap,
+			affine_uv    = mat.affine_uv,
+			dither       = mat.dither,
 		}
 		count += 1
 	}
@@ -223,14 +294,19 @@ _build_render_commands :: proc(cmds: []render.Render_Command) -> int {
 _draw_profiler_overlay :: proc() {
 	snap := profiler.get_snapshot()
 
-	buf: [128]u8
+	ps1_label := "off"
+	if g_state.ps1_lowres {ps1_label = "on"}
+
+	buf: [256]u8
 	text := fmt.bprintf(
 		buf[:],
-		"FPS: %.1f  Frame: %.2f ms\nFixed steps: %.2f avg  (cubes: %d)",
+		"FPS: %.1f  Frame: %.2f ms\nFixed steps: %.2f avg  (cubes: %d)\nPS1 low-res: %s  (F2 toggle)  Fog: %v",
 		snap.fps,
 		snap.frame_ms,
 		snap.fixed_steps,
 		CUBE_COUNT,
+		ps1_label,
+		render.get_fog().enabled,
 	)
 
 	if len(text) < len(buf) {

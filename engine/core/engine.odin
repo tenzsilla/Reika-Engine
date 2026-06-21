@@ -30,6 +30,8 @@ g_running: bool
 Game_Hooks :: struct {
 	// Called once after engine systems are ready
 	on_init:         proc(),
+	// Called exactly once per frame
+	on_update:       proc(dt: f32),
 	// Called once per fixed step, dt is always FIXED_DELTA_TIME
 	on_fixed_update: proc(dt: f32),
 	// Called once per rendered frame, dt is real frame delta
@@ -98,14 +100,19 @@ is_running :: proc() -> bool {
 // 1. reset frame arena
 // 2. poll os events
 // 3. snapshot input once per frame
-// 4. run N fixed updates (game simulation)
-// 5. variable render pass
+// 4. on_update - per-frame variable rate logic + input edge consumption
+// 5. run N fixed updates (game simulation)
+// 6. variable render pass
 frame :: proc() {
 	memory_frame_reset()
-	rl.PollInputEvents()
+	//rl.PollInputEvents()
 	input.snapshot()
 
 	steps := time_begin_frame()
+
+	if g_hooks.on_update != nil {
+		g_hooks.on_update(time_real_delta())
+	}
 
 	for i in 0 ..< steps {
 		if g_hooks.on_fixed_update != nil {
