@@ -76,6 +76,7 @@ odin build . -o:speed
 The project is structured as follows:
 * `engine/` encapsulates all directories and files related to the engine itself.
 * `game/` encapsulates all directories and files related to the gameplay, runtime handlers, etc.
+* `images/` are all images for the engine's showcase on the repo's README
 * `engine/core/` is the engine's core, with the main loop, engine code, time, logging, and memory management.
 * `engine/ecs/` is where the engine's ECS (Entity Component System) files live.
 * `engine/rmath/` is the engine's rmath package (Reika Math) will utilities and procedures like conversions.
@@ -83,3 +84,4 @@ The project is structured as follows:
 * `engine/render/` is the engine's renderer, which handles the PS1 visuals and performance critical code.
 * `engine/camera/` is the engine's camera system and controller
 * `engine/profiler/` is the engine's profiler overlay package
+* `engine/material/` is engine's material service package
